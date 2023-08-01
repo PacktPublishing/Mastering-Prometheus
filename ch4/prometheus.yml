@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+alerting:
+  alertmanagers: []
+rule_files: []
+scrape_configs:
+- job_name: http_sd_test
+  http_sd_configs:
+    - url: "http://http_sd:8888/targets"

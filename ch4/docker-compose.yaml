@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.46.0
+    user: root
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+     - 9090:9090
+  http_sd:
+    image: mastering-prometheus/ch4
+    ports:
+      - 8888:8888
+    build:
+      context: http_sd
+      dockerfile: Dockerfile
