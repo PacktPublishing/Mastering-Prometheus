@@ -1,0 +1,68 @@
+{
+    "receiver": "fallthrough",
+    "status": "firing",
+    "groupLabels": {
+        "alertname": "HighCPU",
+        "datacenter": "us-east-1",
+        "team": "sre"
+    },
+    "commonLabels": {
+        "severity": "warning"
+    },
+    "commonAnnotations": {
+        "summary": "CPU elevated"
+    },
+    "alerts": [
+        {
+            "status": "firing",
+            "labels": {
+                "severity": "warning",
+                "instance": "api1.example.com",
+                "datacenter": "us-east-1",
+                "team": "sre"
+            },
+            "annotations": {
+                "summary": "CPU elevated",
+                "description": "CPU is elevated on api1 for >30m"
+            },
+            "startsAt": "2023-08-13T19:25:15-04:00",
+            "endsAt": "2023-08-13T19:35:15-04:00",
+            "generatorURL": "https://generatorURL.com",
+            "fingerprint": "iamafingerprint"
+        },
+        {
+            "status": "firing",
+            "labels": {
+                "severity": "warning",
+                "instance": "api3.example.com",
+                "datacenter": "us-east-1",
+                "team": "sre"
+            },
+            "annotations": {
+                "summary": "CPU elevated",
+                "description": "CPU is elevated on api3 for >30m"
+            },
+            "startsAt": "2023-08-13T19:25:15-04:00",
+            "endsAt": "2023-08-13T19:35:15-04:00",
+            "generatorURL": "https://generatorURL.com",
+            "fingerprint": "iamafingerprint2"
+        },
+        {
+            "status": "resolved",
+            "labels": {
+                "severity": "warning",
+                "instance": "api2.example.com",
+                "datacenter": "us-east-1",
+                "team": "sre"
+            },
+            "annotations": {
+                "summary": "CPU elevated",
+                "description": "CPU is elevated on api2 for >30m"
+            },
+            "startsAt": "2023-08-13T19:15:15-04:00",
+            "endsAt": "2023-08-13T19:25:15-04:00",
+            "generatorURL": "https://generatorURL.com",
+            "fingerprint": "iamafingerprint3"
+        }
+    ]
+}

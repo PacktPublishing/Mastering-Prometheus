@@ -1,0 +1,60 @@
+route:
+  receiver: "fallthrough"
+  routes:
+    - receiver: "slack-devops"
+      continue: true
+      matchers:
+        - "team = devops"
+      active_time_intervals:
+        - business-hours
+      routes:
+        - receiver: "pagerduty-devops"
+          matchers:
+            - "environment = production"
+    - receiver: "default"
+      matchers:
+        - "environment = production"
+        - "namespace != default"
+        - "team =~ (devops|sre)"
+        - "service !~ ^(api.+)"
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+time_intervals:
+  - name: business-hours
+    time_intervals:
+      - weekdays: ["monday:friday"]
+        times:
+          - start_time: 09:00
+            end_time: 17:00
+        location: "US/Eastern"
+  - name: example
+    time_intervals:
+      - weekdays: ["monday:thursday", "friday"]
+        days_of_month: ["1:31"]
+        months: ["1:6", "july:december"]
+        years: ["2022:2048", "2049"]
+        times:
+          - start_time: 09:00
+            end_time: 17:00
+        location: "US/Eastern"
+receivers:
+  - name: "default"
+  - name: "slack-devops"
+  - name: "pagerduty-devops"
+  - name: "sre"
+    slack_configs:
+      - channel: "#alerts"
+        api_url: "https://hooks.slack.com/services/ZZZZZZZZZZZZZZZ"
+    pagerduty_configs:
+      - routing_key: "XXXXXXXXXXXXXXX"
+  - name: 'fallthrough'
+    webhook_configs:
+      - url: 'http://127.0.0.1:5001/'
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
