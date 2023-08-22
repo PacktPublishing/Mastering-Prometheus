@@ -1,0 +1,46 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: federated-prometheus
+  namespace: prometheus
+  labels:
+    app.kubernetes.io/name: "federated-prometheus"  
+spec:
+  endpoints:
+    - path: /federate
+      port: http-web
+      honorLabels: true
+      params:
+        'match[]':
+          - 'up'
+          - 'node_os_info'
+  namespaceSelector:
+    matchNames:
+      - prometheus
+  selector:
+    matchLabels:
+      app: kube-prometheus-stack-prometheus
+      release: mastering-prometheus
+      self-monitor: "true"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: federated-prometheus
+  namespace: prometheus
+spec:
+  scrapeInterval: 15s
+  serviceMonitorSelector:
+    matchLabels:
+      app.kubernetes.io/name: "federated-prometheus"
+  # Only look in current namespace
+  serviceMonitorNamespaceSelector: null
+  # Disable all other forms of scrape discovery
+  podMonitorSelector: null
+  probeSelector: null
+  scrapeConfigSelector: null
+  version: v2.44.0
+  replicas: 1
+  retention: 24h
+  serviceAccountName: mastering-prometheus-kube-prometheus
