@@ -1,0 +1,32 @@
+grafana:
+  enabled: true
+  defaultDashboardsTimezone: browser
+  adminUser: root
+  adminPassword: m@ster1ngPr0m3th3us
+prometheus:
+  prometheusSpec:
+    additionalArgs:
+      - name: "scrape.timestamp-tolerance"
+        value: "30ms"
+    serviceMonitorSelectorNilUsesHelmValues: false
+    replicas: 2
+    shards: 0
+cleanPrometheusOperatorObjectNames: true
+kubeApiServer:
+  serviceMonitor:
+      metricRelabelings:
+      # Drop excessively noisy apiserver buckets.
+      - action: drop
+        regex: apiserver_request_duration_seconds_bucket;(0.15|0.2|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2|3|3.5|4|4.5|6|7|8|9|15|25|40|50)
+        sourceLabels:
+          - __name__
+          - le
+      - action: drop
+        regex: kubernetes_feature_enabled
+        sourceLabels: [ __name__ ]
+kubelet:
+  serviceMonitor:
+    metricRelabelings:
+      - action: drop
+        regex: kubernetes_feature_enabled
+        sourceLabels: [ __name__ ]

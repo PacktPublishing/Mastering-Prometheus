@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: recording-rule-test
+  labels:
+    app: kube-prometheus-stack
+    app.kubernetes.io/instance: mastering-prometheus
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kube-prometheus-stack
+    app.kubernetes.io/version: 47.0.0
+    chart: kube-prometheus-stack-47.0.0
+    heritage: Helm
+    release: mastering-prometheus
+spec:
+  groups:
+  - name: whegedus
+    rules:
+    - record: count:up:sum
+      expr: count(up:sum)
+    - record: job:up:count
+      expr: count by (job) (up)
+    - record: up:sum
+      expr: sum(job:up:count)
