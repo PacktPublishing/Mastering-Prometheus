@@ -1,0 +1,6 @@
+remote_write:
+  - url: https://teamMandalorian.o11y.example.com/api/prom/push
+    write_relabel_configs:
+      - action: keep
+        source_labels: [ "team" ]
+        regex: 'mandalore'
