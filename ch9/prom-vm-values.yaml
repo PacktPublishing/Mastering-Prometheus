@@ -1,0 +1,15 @@
+grafana:
+  enabled: true
+  defaultDashboardsTimezone: browser
+  adminUser: root
+  adminPassword: m@ster1ngPr0m3th3us
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    replicas: 2
+    replicaExternalLabelNameClear: true
+    remoteWriteDashboards: true
+    remoteWrite:
+      - name: victoriametrics
+        url: http://vmsingle-victoria-metrics-single-server.prometheus.svc.cluster.local:8428/api/v1/write
+cleanPrometheusOperatorObjectNames: true
