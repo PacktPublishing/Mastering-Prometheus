@@ -1,0 +1,28 @@
+grafana:
+  enabled: true
+  defaultDashboardsTimezone: browser
+  adminUser: root
+  adminPassword: m@ster1ngPr0m3th3us
+  additionalDataSources:
+    - name: Mimir
+      type: prometheus
+      access: proxy
+      orgId: 1
+      url: http://mastering-prometheus-mimir.prometheus.svc.cluster.local/prometheus
+      version: 1
+      editable: true
+      jsonData:
+        httpHeaderName1: "X-Scope-OrgID"
+      secureJsonData:
+        httpHeaderValue1: "mastering-prometheus"
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    replicas: 2
+    remoteWriteDashboards: true
+    remoteWrite:
+      - name: mimir
+        url: http://mastering-prometheus-mimir.prometheus.svc.cluster.local:80/api/v1/push
+        headers:
+          X-Scope-OrgID: mastering-prometheus
+cleanPrometheusOperatorObjectNames: true
