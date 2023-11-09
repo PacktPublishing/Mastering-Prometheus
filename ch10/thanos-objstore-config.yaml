@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thanos-objstore-config
+  namespace: prometheus
+stringData:
+  thanos.yaml: |
+    type: s3
+    config:
+      bucket: mastering-prometheus-thanos
+      endpoint: us-ord-1.linodeobjects.com
+      access_key: REDACTED
+      secret_key: REDACTED

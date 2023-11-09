@@ -1,0 +1,16 @@
+grafana:
+  enabled: true
+  defaultDashboardsTimezone: browser
+  adminUser: root
+  adminPassword: m@ster1ngPr0m3th3us
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    replicas: 2
+    thanos:
+      objectStorageConfig:
+        name: thanos-objstore-config
+        key: "thanos.yaml"
+  thanosServiceMonitor:
+    enabled: true
+cleanPrometheusOperatorObjectNames: true
