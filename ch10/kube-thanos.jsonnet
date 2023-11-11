@@ -44,7 +44,11 @@ local c = t.compact(commonConfig {
 local q = t.query(commonConfig {
   replicas: 1,
   serviceMonitor: true,
-  stores: ['dnssrv+_grpc._tcp.prometheus-operated.prometheus.svc.cluster.local'],
+local qf = t.queryFrontend(commonConfig {
+  replicas: 1,
+  downstreamURL: 'http://%s.%s.svc.cluster.local:%d' % [q.service.metadata.name, q.service.metadata.namespace, q.service.spec.ports[1].port],
+  logQueriesLongerThan: '60s',
+  serviceMonitor: true
 });
 
 // { ['thanos-store-' + name]: s[name] for name in std.objectFields(s) } +
@@ -60,5 +64,9 @@ local q = t.query(commonConfig {
     ),
   "thanos-query.yaml": std.manifestYamlStream(
       [ q[name] for name in std.objectFields(q) if q[name] != null ], quote_keys=false
+    ),
+  "thanos-queryfrontend.yaml": std.manifestYamlStream(
+    [ qf[name] for name in std.objectFields(qf) if qf[name] != null ], quote_keys=false
+    ),
     )
 }
