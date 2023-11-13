@@ -1,0 +1,219 @@
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  labels:
+    app.kubernetes.io/component: "rule-evaluation-engine"
+    app.kubernetes.io/instance: "thanos-rule"
+    app.kubernetes.io/name: "thanos-rule"
+    app.kubernetes.io/version: "v0.31.0"
+  name: "thanos-rule"
+  namespace: "prometheus"
+spec:
+  clusterIP: "None"
+  ports:
+  - name: "grpc"
+    port: 10901
+    targetPort: 10901
+  - name: "http"
+    port: 10902
+    targetPort: 10902
+  - name: "reloader"
+    port: 9533
+    targetPort: 9533
+  selector:
+    app.kubernetes.io/component: "rule-evaluation-engine"
+    app.kubernetes.io/instance: "thanos-rule"
+    app.kubernetes.io/name: "thanos-rule"
+---
+apiVersion: "v1"
+kind: "ServiceAccount"
+metadata:
+  annotations: {}
+  labels:
+    app.kubernetes.io/component: "rule-evaluation-engine"
+    app.kubernetes.io/instance: "thanos-rule"
+    app.kubernetes.io/name: "thanos-rule"
+    app.kubernetes.io/version: "v0.31.0"
+  name: "thanos-rule"
+  namespace: "prometheus"
+---
+apiVersion: "monitoring.coreos.com/v1"
+kind: "ServiceMonitor"
+metadata:
+  labels:
+    app.kubernetes.io/component: "rule-evaluation-engine"
+    app.kubernetes.io/instance: "thanos-rule"
+    app.kubernetes.io/name: "thanos-rule"
+    app.kubernetes.io/version: "v0.31.0"
+  name: "thanos-rule"
+  namespace: "prometheus"
+spec:
+  endpoints:
+  - port: "http"
+    relabelings:
+    - action: "replace"
+      separator: "/"
+      sourceLabels:
+      - "namespace"
+      - "pod"
+      targetLabel: "instance"
+  - port: "reloader"
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: "rule-evaluation-engine"
+      app.kubernetes.io/instance: "thanos-rule"
+      app.kubernetes.io/name: "thanos-rule"
+---
+apiVersion: "apps/v1"
+kind: "StatefulSet"
+metadata:
+  labels:
+    app.kubernetes.io/component: "rule-evaluation-engine"
+    app.kubernetes.io/instance: "thanos-rule"
+    app.kubernetes.io/name: "thanos-rule"
+    app.kubernetes.io/version: "v0.31.0"
+  name: "thanos-rule"
+  namespace: "prometheus"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: "rule-evaluation-engine"
+      app.kubernetes.io/instance: "thanos-rule"
+      app.kubernetes.io/name: "thanos-rule"
+  serviceName: "thanos-rule"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: "rule-evaluation-engine"
+        app.kubernetes.io/instance: "thanos-rule"
+        app.kubernetes.io/name: "thanos-rule"
+        app.kubernetes.io/version: "v0.31.0"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: "app.kubernetes.io/name"
+                  operator: "In"
+                  values:
+                  - "thanos-rule"
+                - key: "app.kubernetes.io/instance"
+                  operator: "In"
+                  values:
+                  - "thanos-rule"
+              namespaces:
+              - "prometheus"
+              topologyKey: "kubernetes.io/hostname"
+            weight: 100
+      containers:
+      - args:
+        - "rule"
+        - "--log.level=info"
+        - "--log.format=logfmt"
+        - "--grpc-address=0.0.0.0:10901"
+        - "--http-address=0.0.0.0:10902"
+        - "--objstore.config=$(OBJSTORE_CONFIG)"
+        - "--data-dir=/var/thanos/rule"
+        - "--label=rule_replica=\"$(NAME)\""
+        - "--alert.label-drop=rule_replica"
+        - "--tsdb.retention=48h"
+        - "--tsdb.block-duration=2h"
+        - "--query=dnssrv+_http._tcp.thanos-query.prometheus.svc.cluster.local"
+        - "--rule-file=/etc/thanos/rules/thanos-ruler-rules/thanos-query.yaml"
+        env:
+        - name: "NAME"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.name"
+        - name: "OBJSTORE_CONFIG"
+          valueFrom:
+            secretKeyRef:
+              key: "thanos.yaml"
+              name: "thanos-objstore-config"
+        - name: "HOST_IP_ADDRESS"
+          valueFrom:
+            fieldRef:
+              fieldPath: "status.hostIP"
+        image: "quay.io/thanos/thanos:v0.31.0"
+        imagePullPolicy: "IfNotPresent"
+        livenessProbe:
+          failureThreshold: 24
+          httpGet:
+            path: "/-/healthy"
+            port: 10902
+            scheme: "HTTP"
+          periodSeconds: 5
+        name: "thanos-rule"
+        ports:
+        - containerPort: 10901
+          name: "grpc"
+        - containerPort: 10902
+          name: "http"
+        - containerPort: 9533
+          name: "reloader"
+        readinessProbe:
+          failureThreshold: 18
+          httpGet:
+            path: "/-/ready"
+            port: 10902
+            scheme: "HTTP"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - "ALL"
+          readOnlyRootFilesystem: true
+          runAsGroup: 65532
+          runAsNonRoot: true
+          runAsUser: 65534
+          seccompProfile:
+            type: "RuntimeDefault"
+        terminationMessagePolicy: "FallbackToLogsOnError"
+        volumeMounts:
+        - mountPath: "/var/thanos/rule"
+          name: "data"
+          readOnly: false
+        - mountPath: "/etc/thanos/rules/thanos-ruler-rules"
+          name: "thanos-ruler-rules"
+      - args:
+        - "-webhook-url=http://localhost:10902/-/reload"
+        - "-volume-dir=/etc/thanos/rules/thanos-ruler-rules"
+        image: "jimmidyson/configmap-reload:v0.5.0"
+        imagePullPolicy: "IfNotPresent"
+        name: "configmap-reloader"
+        volumeMounts:
+        - mountPath: "/etc/thanos/rules/thanos-ruler-rules"
+          name: "thanos-ruler-rules"
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: "RuntimeDefault"
+      serviceAccountName: "thanos-rule"
+      volumes:
+      - configMap:
+          name: "thanos-ruler-rules"
+        name: "thanos-ruler-rules"
+      - emptyDir: {}
+        name: "data"
+  volumeClaimTemplates: []
+---
+apiVersion: "v1"
+data:
+  thanos-query.yaml: "{\"groups\": [{\"name\": \"thanos-query.rules\", \"rules\": [{\"expr\": \"(\\n  sum by (job) (rate(grpc_client_handled_total{grpc_code=~\\\"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded\\\", job=~\\\".*thanos-query.*\\\", grpc_type=\\\"unary\\\"}[5m]))\\n/\\n  sum by (job) (rate(grpc_client_started_total{job=~\\\".*thanos-query.*\\\", grpc_type=\\\"unary\\\"}[5m]))\\n)\\n\", \"record\": \":grpc_client_failures_per_unary:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(grpc_client_handled_total{grpc_code=~\\\"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded\\\", job=~\\\".*thanos-query.*\\\", grpc_type=\\\"server_stream\\\"}[5m]))\\n/\\n  sum by (job) (rate(grpc_client_started_total{job=~\\\".*thanos-query.*\\\", grpc_type=\\\"server_stream\\\"}[5m]))\\n)\\n\", \"record\": \":grpc_client_failures_per_stream:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(thanos_query_store_apis_dns_failures_total{job=~\\\".*thanos-query.*\\\"}[5m]))\\n/\\n  sum by (job) (rate(thanos_query_store_apis_dns_lookups_total{job=~\\\".*thanos-query.*\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_query_store_apis_dns_failures_per_lookup:sum_rate\"}, {\"expr\": \"histogram_quantile(0.99,\\n  sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~\\\".*thanos-query.*\\\", handler=\\\"query\\\"}[5m]))\\n)\\n\", \"labels\": {\"quantile\": \"0.99\"}, \"record\": \":query_duration_seconds:histogram_quantile\"}, {\"expr\": \"histogram_quantile(0.99,\\n  sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~\\\".*thanos-query.*\\\", handler=\\\"query_range\\\"}[5m]))\\n)\\n\", \"labels\": {\"quantile\": \"0.99\"}, \"record\": \":api_range_query_duration_seconds:histogram_quantile\"}]}, {\"name\": \"thanos-receive.rules\", \"rules\": [{\"expr\": \"(\\n  sum by (job) (rate(grpc_server_handled_total{grpc_code=~\\\"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded\\\", job=~\\\".*thanos-receive.*\\\", grpc_type=\\\"unary\\\"}[5m]))\\n/\\n  sum by (job) (rate(grpc_server_started_total{job=~\\\".*thanos-receive.*\\\", grpc_type=\\\"unary\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_query_receive_grpc_server_failures_per_unary:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(grpc_server_handled_total{grpc_code=~\\\"Unknown|ResourceExhausted|Internal|Unavailable|DataLoss|DeadlineExceeded\\\", job=~\\\".*thanos-receive.*\\\", grpc_type=\\\"server_stream\\\"}[5m]))\\n/\\n  sum by (job) (rate(grpc_server_started_total{job=~\\\".*thanos-receive.*\\\", grpc_type=\\\"server_stream\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_query_receive_grpc_server_failures_per_stream:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(http_requests_total{handler=\\\"receive\\\", job=~\\\".*thanos-receive.*\\\", code!~\\\"5..\\\"}[5m]))\\n/\\n  sum by (job) (rate(http_requests_total{handler=\\\"receive\\\", job=~\\\".*thanos-receive.*\\\"}[5m]))\\n)\\n\", \"record\": \":http_failure_per_request:sum_rate\"}, {\"expr\": \"histogram_quantile(0.99,\\n  sum by (job, le) (rate(http_request_duration_seconds_bucket{handler=\\\"receive\\\", job=~\\\".*thanos-receive.*\\\"}[5m]))\\n)\\n\", \"labels\": {\"quantile\": \"0.99\"}, \"record\": \":http_request_duration_seconds:histogram_quantile\"}, {\"expr\": \"(\\n  sum by (job) (rate(thanos_receive_replications_total{result=\\\"error\\\", job=~\\\".*thanos-receive.*\\\"}[5m]))\\n/\\n  sum by (job) (rate(thanos_receive_replications_total{job=~\\\".*thanos-receive.*\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_receive_replication_failure_per_requests:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(thanos_receive_forward_requests_total{result=\\\"error\\\", job=~\\\".*thanos-receive.*\\\"}[5m]))\\n/\\n  sum by (job) (rate(thanos_receive_forward_requests_total{job=~\\\".*thanos-receive.*\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_receive_forward_failure_per_requests:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(thanos_receive_hashrings_file_errors_total{job=~\\\".*thanos-receive.*\\\"}[5m]))\\n/\\n  sum by (job) (rate(thanos_receive_hashrings_file_refreshes_total{job=~\\\".*thanos-receive.*\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_receive_hashring_file_failure_per_refresh:sum_rate\"}]}, {\"name\": \"thanos-store.rules\", \"rules\": [{\"expr\": \"(\\n  sum by (job) (rate(grpc_server_handled_total{grpc_code=~\\\"Unknown|Internal|Unavailable|DataLoss|DeadlineExceeded\\\", job=~\\\".*thanos-store.*\\\", grpc_type=\\\"unary\\\"}[5m]))\\n/\\n  sum by (job) (rate(grpc_server_started_total{job=~\\\".*thanos-store.*\\\", grpc_type=\\\"unary\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_query_store_grpc_server_failures_per_unary:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(grpc_server_handled_total{grpc_code=~\\\"Unknown|Internal|Unavailable|DataLoss|DeadlineExceeded\\\", job=~\\\".*thanos-store.*\\\", grpc_type=\\\"server_stream\\\"}[5m]))\\n/\\n  sum by (job) (rate(grpc_server_started_total{job=~\\\".*thanos-store.*\\\", grpc_type=\\\"server_stream\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_query_store_grpc_server_failures_per_stream:sum_rate\"}, {\"expr\": \"(\\n  sum by (job) (rate(thanos_objstore_bucket_operation_failures_total{job=~\\\".*thanos-store.*\\\"}[5m]))\\n/\\n  sum by (job) (rate(thanos_objstore_bucket_operations_total{job=~\\\".*thanos-store.*\\\"}[5m]))\\n)\\n\", \"record\": \":thanos_objstore_bucket_failures_per_operation:sum_rate\"}, {\"expr\": \"histogram_quantile(0.99,\\n  sum by (job, le) (rate(thanos_objstore_bucket_operation_duration_seconds_bucket{job=~\\\".*thanos-store.*\\\"}[5m]))\\n)\\n\", \"labels\": {\"quantile\": \"0.99\"}, \"record\": \":thanos_objstore_bucket_operation_duration_seconds:histogram_quantile\"}]}, {\"name\": \"thanos-bucket-replicate.rules\", \"rules\": [ ]}]}"
+kind: "ConfigMap"
+metadata:
+  name: "thanos-ruler-rules"
+  namespace: "prometheus"
+...

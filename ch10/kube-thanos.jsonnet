@@ -1,4 +1,22 @@
 local t = import 'kube-thanos/thanos.libsonnet';
+local tmix = (import 'mixin/rules/rules.libsonnet') + (import 'mixin/config.libsonnet');
+
+local useEmptyDir(sts) = sts + {
+  statefulSet+: {
+    spec+:{
+      template+:{
+        spec+:{
+          volumes+: [
+            {
+              emptyDir: {},
+              name: "data"
+            }
+          ]
+        }
+      }
+    }
+  },
+};
 
 local commonConfig = {
     local cfg = self,
@@ -13,49 +31,18 @@ local commonConfig = {
     },
 };
 
-local c = t.compact(commonConfig {
+local c = useEmptyDir(t.compact(commonConfig {
   replicas: 1,
   serviceMonitor: true,
   disableDownsampling: false,
   deduplicationReplicaLabels: super.replicaLabels,  // reuse same labels for deduplication
-})
-+ {
-  statefulSet+: {
-    spec+:{
-      template+:{
-        spec+:{
-          volumes+: [
-            {
-              emptyDir: {},
-              name: "data"
-            }
-          ]
-        }
-      }
-    }
-  },
-};
+}));
 
-local s = t.store(commonConfig {
+
+local s = useEmptyDir(t.store(commonConfig {
   replicas: 1,
   serviceMonitor: true,
-})
-+ {
-  statefulSet+: {
-    spec+:{
-      template+:{
-        spec+:{
-          volumes+: [
-            {
-              emptyDir: {},
-              name: "data"
-            }
-          ]
-        }
-      }
-    }
-  },
-};
+}));
 
 local q = t.query(commonConfig {
   replicas: 1,
@@ -63,6 +50,7 @@ local q = t.query(commonConfig {
   stores: [
     'dnssrv+_grpc._tcp.prometheus-operated.prometheus.svc.cluster.local',
     'dnssrv+_grpc._tcp.%s.prometheus.svc.cluster.local' % s.service.metadata.name,
+    'dnssrv+_grpc._tcp.thanos-rule.%s.svc.cluster.local' % commonConfig.namespace,
     ],
 });
 
@@ -72,6 +60,29 @@ local qf = t.queryFrontend(commonConfig {
   logQueriesLongerThan: '60s',
   serviceMonitor: true
 });
+
+local sampleRulesCM = {
+    apiVersion: 'v1',
+    kind: 'ConfigMap',
+    metadata: {
+      name: 'thanos-ruler-rules',
+      namespace: commonConfig.namespace
+    },
+    data: {
+      'thanos-query.yaml': std.toString(tmix.prometheusRules)
+    },
+  };
+
+local r = useEmptyDir(t.rule(commonConfig {
+  replicas: 1,
+  serviceMonitor: true,
+  queriers: ['dnssrv+_http._tcp.%s.%s.svc.cluster.local' % [q.service.metadata.name, q.service.metadata.namespace]],
+  rulesConfig: [
+    { name: sampleRulesCM.metadata.name, key: cmKey } for cmKey in std.objectFields(sampleRulesCM.data)
+    ],
+  volumeClaimTemplate: {},
+  reloaderImage: 'jimmidyson/configmap-reload:v0.5.0'
+}));
 
 // { ['thanos-store-' + name]: s[name] for name in std.objectFields(s) } +
 // { ['thanos-query-' + name]: q[name] for name in std.objectFields(q) } +
@@ -92,5 +103,8 @@ local qf = t.queryFrontend(commonConfig {
     ),
   "thanos-store.yaml": std.manifestYamlStream(
     [ s[name] for name in std.objectFields(s) if s[name] != null ], quote_keys=false
+    ),
+  "thanos-ruler.yaml": std.manifestYamlStream(
+    [ r[name] for name in std.objectFields(r) if r[name] != null ] + [sampleRulesCM], quote_keys=false
     )
 }
