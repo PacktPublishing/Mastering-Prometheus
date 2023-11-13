@@ -61,6 +61,50 @@ You can access the UI by port-forwarding to the Service like so:
 $ kubectl port-forward svc/thanos-query 9090
 ```
 
+## Thanos Query Frontend
+Ensure that your Thanos Query instance(s) are deployed, then apply the [manifest](./manifests/thanos-queryfrontend.yaml) in this repo.
+
+```console
+$ kubectl apply -f mastering-prometheus/ch10/manifests/thanos-queryfrontend.yaml
+```
+
+You can access the UI by port-forwarding to the Service like so:
+
+```console
+$ kubectl port-forward svc/thanos-query-frontend 9090
+```
+
+## Thanos Store
+Ensure that your Thanos Sidecars are deployed, then apply the [manifest](./manifests/thanos-store.yaml) in this repo.
+
+```console
+$ kubectl apply -f mastering-prometheus/ch10/manifests/thanos-store.yaml
+```
+
+## Thanos Ruler
+Ensure that your Thanos Query instance(s) are deployed, then apply the [manifest](./manifests/thanos-ruler.yaml) in this repo.
+
+```console
+$ kubectl apply -f mastering-prometheus/ch10/manifests/thanos-ruler.yaml
+```
+
+## Thanos Receiver
+Apply the [manifest](./manifests/thanos-receiver.yaml):
+
+```console
+$ kubectl apply -f mastering-prometheus/ch10/manifests/thanos-receiver.yaml
+```
+
+Then configure Prometheus to remote write to it by using updated Helm values:
+
+```console
+$ helm upgrade --namespace prometheus \
+    --version 47.0.0 \
+    --values mastering-prometheus/ch10/prom-thanos-receiver-values.yaml \
+    mastering-prometheus \
+    prometheus-community/kube-prometheus-stack
+```
+
 ## Cleanup
 
 When you're done, you can clean up by resetting the Prometheus deployment.

@@ -44,13 +44,14 @@ local s = useEmptyDir(t.store(commonConfig {
   serviceMonitor: true,
 }));
 
+local queryEndpointServices = ['prometheus-operated', 'thanos-store', 'thanos-rule', 'thanos-receive'];
+
 local q = t.query(commonConfig {
   replicas: 1,
   serviceMonitor: true,
   stores: [
-    'dnssrv+_grpc._tcp.prometheus-operated.prometheus.svc.cluster.local',
-    'dnssrv+_grpc._tcp.%s.prometheus.svc.cluster.local' % s.service.metadata.name,
-    'dnssrv+_grpc._tcp.thanos-rule.%s.svc.cluster.local' % commonConfig.namespace,
+      'dnssrv+_grpc._tcp.%s.%s.svc.cluster.local' % [component, commonConfig.namespace]
+      for component in queryEndpointServices
     ],
 });
 
@@ -84,11 +85,11 @@ local r = useEmptyDir(t.rule(commonConfig {
   reloaderImage: 'jimmidyson/configmap-reload:v0.5.0'
 }));
 
-// { ['thanos-store-' + name]: s[name] for name in std.objectFields(s) } +
-// { ['thanos-query-' + name]: q[name] for name in std.objectFields(q) } +
-// std.manifestYamlStream(
-//   { ['thanos-compact-' + name + 'yaml']: c[name] for name in std.objectFields(c) if c[name] != null }
-// )
+local rcv = useEmptyDir(t.receive(commonConfig {
+  replicas: 1,
+  replicationFactor: 1,
+  serviceMonitor: true
+}));
 
 
 {
@@ -106,5 +107,8 @@ local r = useEmptyDir(t.rule(commonConfig {
     ),
   "thanos-ruler.yaml": std.manifestYamlStream(
     [ r[name] for name in std.objectFields(r) if r[name] != null ] + [sampleRulesCM], quote_keys=false
+    ),
+  "thanos-receiver.yaml": std.manifestYamlStream(
+    [ rcv[name] for name in std.objectFields(rcv) if rcv[name] != null ], quote_keys=true
     )
 }

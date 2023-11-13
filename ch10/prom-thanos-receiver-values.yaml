@@ -1,0 +1,20 @@
+grafana:
+  enabled: true
+  defaultDashboardsTimezone: browser
+  adminUser: root
+  adminPassword: m@ster1ngPr0m3th3us
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    replicas: 2
+    remoteWriteDashboards: true
+    remoteWrite:
+      - name: thanos-receive
+        url: http://thanos-receive.prometheus.svc.cluster.local:19291/api/v1/receive
+    thanos:
+      objectStorageConfig:
+        name: thanos-objstore-config
+        key: "thanos.yaml"
+  thanosServiceMonitor:
+    enabled: true
+cleanPrometheusOperatorObjectNames: true
