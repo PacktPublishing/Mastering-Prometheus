@@ -2,7 +2,10 @@ groups:
   - name: chapter5
     rules:
       - alert: SSHDown
-        expr: max_over_time(probe_success{job="blackbox_ssh"}[5m]) != 1
+        expr: >
+          max_over_time(
+            probe_success{job="blackbox_ssh"}[5m]
+          ) != 1
         for: 5m
         labels:
           severity: warning

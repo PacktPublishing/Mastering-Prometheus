@@ -9,7 +9,7 @@ tests:
       - series: 'probe_success{instance="server1", job="blackbox_ssh"}'
         values: "1 1 1 1 0+0x12"
       - series: 'probe_success{instance="server2", job="blackbox_ssh"}'
-        values: "1 1 1 _ 1+0x16"
+        values: "1 1 1 _ 1+0x12"
     alert_rule_test:
       - alertname: SSHDown
         eval_time: 9m
