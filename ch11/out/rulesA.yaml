@@ -1,0 +1,9 @@
+"groups":
+- "name": "chapter11"
+  "rules":
+  - "alert": "SSHDown"
+    "expr": "last_over_time(probe_success{service=\"blackbox_ssh\",service=\"prometheus\",environment=\"prod\"}[5m]) != 1"
+    "for": "5m"
+  - "alert": "ICMPDown"
+    "expr": "last_over_time(probe_success{service=\"blackbox_icmp\",service=\"prometheus\",environment=\"prod\"}[5m]) != 1"
+    "for": "5m"

@@ -1,0 +1,5 @@
+"groups":
+- "name": "general"
+  "rules":
+  - "alert": "ScrapeJobDown"
+    "expr": "up != 1"
