@@ -1,0 +1,27 @@
+# This is a list of rule files to consider for testing. Globs are supported.
+rule_files:
+  - ../rules/test-rule.yaml
+
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'probe_success{instance="server1", job="blackbox_ssh"}'
+        values: "1 1 1 1 0+0x12"
+      - series: 'probe_success{instance="server2", job="blackbox_ssh"}'
+        values: "1 1 1 _ 1+0x12"
+    alert_rule_test:
+      - alertname: SSHDown
+        eval_time: 9m
+        exp_alerts: []
+      - alertname: SSHDown
+        eval_time: 14m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              team: sre
+              instance: server1
+              job: blackbox_ssh
+            exp_annotations:
+              description: "Cannot SSH to server1"
+              grafana: "https://grafana.example.com/ssh-dashboard?var-instance=server1"
