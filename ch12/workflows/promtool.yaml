@@ -2,8 +2,8 @@ name: promtool
 on: push
 
 jobs:
-  rules:
-    name: Validate Prometheus Rules
+  config:
+    name: Validate Prometheus Config
     runs-on: ubuntu-latest
     container: quay.io/prometheus/prometheus:v2.46.0
     steps:
@@ -12,6 +12,14 @@ jobs:
 
       - name: Validate Prometheus config file
         run: promtool check config ch12/prometheus.yaml
+
+  rules:
+    name: Validate Prometheus Rules
+    runs-on: ubuntu-latest
+    container: quay.io/prometheus/prometheus:v2.46.0
+    steps:
+      - name: Checkout/clone code
+        uses: actions/checkout@v4
 
       - name: Validate Prometheus rules files
         run: promtool check rules ch12/rules/*.yaml
