@@ -1,0 +1,30 @@
+name: amtool
+on: push
+
+jobs:
+  config:
+    name: Validate Alertmanager config
+    runs-on: ubuntu-latest
+    container: quay.io/prometheus/alertmanager:v0.25.0
+    steps:
+      - name: Checkout/clone code
+        uses: actions/checkout@v4
+
+      - name: Validate Alertmanager config file
+        run: amtool check-config ch12/alertmanager.yaml
+  routes:
+    name: Validate Alertmanager routes
+    runs-on: ubuntu-latest
+    container: quay.io/prometheus/alertmanager:v0.25.0
+    steps:
+      - name: Checkout/clone code
+        uses: actions/checkout@v4
+
+      - name: Validate Alertmanager Route
+        run: |
+          amtool config routes \
+            --config.file=ch12/alertmanager.yaml \
+            test --verify.receivers \
+            pagerduty-devops \
+            team=devops environment=production \
+            service=jenkins

@@ -1,0 +1,30 @@
+route:
+  receiver: "fallthrough"
+  routes:
+    - receiver: "slack-devops"
+      matchers:
+        - "team = devops"
+      routes:
+        - receiver: "pagerduty-devops"
+          matchers:
+            - "environment = production"
+    - receiver: "sre"
+      matchers:
+        - "environment = production"
+        - "team = sre"
+receivers:
+  - name: "sre"
+    slack_configs:
+      - channel: "#sre-alerts"
+        api_url: "https://hooks.slack.com/services/ZZZZZZZZZZZZZZZ"
+  - name: "slack-devops"
+    slack_configs:
+      - channel: "#devops-alerts"
+        api_url: "https://hooks.slack.com/services/ZZZZZZZZZZZZZZZ"
+  - name: "pagerduty-devops"
+    pagerduty_configs:
+      - routing_key: "XXXXXXXXXXXXXXX"
+  - name: 'fallthrough'
+    webhook_configs:
+      - url: 'http://127.0.0.1:5001/'
+
