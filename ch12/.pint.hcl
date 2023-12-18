@@ -5,10 +5,6 @@
 
 prometheus "mastering-prometheus" {
   uri         = "http://localhost:9090"
-  timeout     = "1m"
-  include     = ["out/rules.yaml"]
-  concurrency = 16
-  rateLimit   = 100
 }
 
 rule {
@@ -31,10 +27,20 @@ rule {
     kind = "alerting"
   }
 
-  # Each alert must have a 'description annotation on every alert.
-  annotation "description" {
+  # Each alert must have a 'summary' annotation.
+  # Must begin with a capital letter, end with a period, and *not* contain templated values.
+  annotation "summary" {
     severity = "bug" # `bug` severity is like error.. can be bug/warning/info
     required = true
+    value = "[A-Z][^{.!?]+.\\."
+  }
+  
+  # Each alert must have a 'description' annotation.
+  # Must begin with a capital letter, end with a period, and include at least one templated value.
+  annotation "description" {
+    severity = "bug" 
+    required = true
+    value = "[A-Z].+\\{\\{.*\\}\\}.*\\."
   }
 
   # Each alert must have a 'severity' annotation that's either 'critical', 'warning', 'info'.
