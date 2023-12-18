@@ -1,0 +1,22 @@
+name: pint
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "ch12/rules/*.yaml"
+
+
+jobs:
+  pint:
+    name: Pint CI test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout/clone code
+        uses: actions/checkout@v4
+
+      - name: Run pint
+        uses: prymitive/pint-action@v1
+        with:
+          token: ${{ github.token }}
+          config: '.github/pint/pint.hcl'
