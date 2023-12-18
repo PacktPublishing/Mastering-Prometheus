@@ -1,0 +1,16 @@
+groups:
+  - name: chapter12
+    rules:
+      # pint disable promql/series(probe_success)
+      - alert: SSHDown
+        expr: >
+          max_over_time(
+            probe_success{job="blackbox_ssh"}[5m]
+          ) != 1
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          description: "Cannot SSH to {{ $labels.instance }}"
+          grafana: https://grafana.example.com/ssh-dashboard?var-instance={{ $labels.instance }}
