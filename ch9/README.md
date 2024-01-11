@@ -66,7 +66,7 @@ Helm should've automatically provisioned the datasource for Mimir but, in case y
 
 1. Open http://localhost:3000 in your browser
 2. Login using the credentials from [prom-mimir-values.yaml](./prom-mimir-values.yaml)
-3. Add a new `Prometheus`-type datasourc
+3. Add a new `Prometheus`-type datasource
    1. Use `http://mastering-prometheus-mimir.prometheus.svc.cluster.local/prometheus` as the URL
    2. Add a `Custom HTTP Header`
     1. Set `X-Scope-OrgID` as the key and `mastering-prometheus` as the value.
