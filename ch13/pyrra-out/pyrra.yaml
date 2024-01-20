@@ -1,0 +1,115 @@
+groups:
+- interval: 2m30s
+  name: prometheus-request-latency-increase
+  rules:
+  - expr: sum by (handler) (increase(prometheus_http_request_duration_seconds_count[30d]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:increase30d
+  - expr: sum by (handler) (increase(prometheus_http_request_duration_seconds_bucket{le="0.1"}[30d]))
+    labels:
+      le: "0.1"
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:increase30d
+  - alert: SLOMetricAbsent
+    expr: absent(prometheus_http_request_duration_seconds_count) == 1
+    for: 2m
+    labels:
+      severity: critical
+      slo: prometheus-request-latency
+  - alert: SLOMetricAbsent
+    expr: absent(prometheus_http_request_duration_seconds_bucket{le="0.1"}) == 1
+    for: 2m
+    labels:
+      le: "0.1"
+      severity: critical
+      slo: prometheus-request-latency
+- interval: 30s
+  name: prometheus-request-latency
+  rules:
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[5m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[5m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[5m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate5m
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[32m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[32m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[32m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate32m
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[1h4m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[1h4m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[1h4m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate1h4m
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[2h9m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[2h9m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[2h9m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate2h9m
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[6h26m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[6h26m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[6h26m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate6h26m
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[1d1h43m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[1d1h43m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[1d1h43m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate1d1h43m
+  - expr: (sum by (handler) (rate(prometheus_http_request_duration_seconds_count[4d6h51m]))
+      - sum by (handler) (rate(prometheus_http_request_duration_seconds_bucket{le="0.1"}[4d6h51m])))
+      / sum by (handler) (rate(prometheus_http_request_duration_seconds_count[4d6h51m]))
+    labels:
+      slo: prometheus-request-latency
+    record: prometheus_http_request_duration_seconds:burnrate4d6h51m
+  - alert: PrometheusHighRequestLatency
+    expr: prometheus_http_request_duration_seconds:burnrate5m{slo="prometheus-request-latency"}
+      > (14 * (1-0.9990000000000001)) and prometheus_http_request_duration_seconds:burnrate1h4m{slo="prometheus-request-latency"}
+      > (14 * (1-0.9990000000000001))
+    for: 2m
+    labels:
+      exhaustion: 2d3h25m42s
+      long: 1h4m
+      severity: critical
+      short: 5m
+      slo: prometheus-request-latency
+  - alert: PrometheusHighRequestLatency
+    expr: prometheus_http_request_duration_seconds:burnrate32m{slo="prometheus-request-latency"}
+      > (7 * (1-0.9990000000000001)) and prometheus_http_request_duration_seconds:burnrate6h26m{slo="prometheus-request-latency"}
+      > (7 * (1-0.9990000000000001))
+    for: 16m
+    labels:
+      exhaustion: 4d6h51m25s
+      long: 6h26m
+      severity: critical
+      short: 32m
+      slo: prometheus-request-latency
+  - alert: PrometheusHighRequestLatency
+    expr: prometheus_http_request_duration_seconds:burnrate2h9m{slo="prometheus-request-latency"}
+      > (2 * (1-0.9990000000000001)) and prometheus_http_request_duration_seconds:burnrate1d1h43m{slo="prometheus-request-latency"}
+      > (2 * (1-0.9990000000000001))
+    for: 1h4m
+    labels:
+      exhaustion: 15d
+      long: 1d1h43m
+      severity: warning
+      short: 2h9m
+      slo: prometheus-request-latency
+  - alert: PrometheusHighRequestLatency
+    expr: prometheus_http_request_duration_seconds:burnrate6h26m{slo="prometheus-request-latency"}
+      > (1 * (1-0.9990000000000001)) and prometheus_http_request_duration_seconds:burnrate4d6h51m{slo="prometheus-request-latency"}
+      > (1 * (1-0.9990000000000001))
+    for: 3h13m
+    labels:
+      exhaustion: 30d
+      long: 4d6h51m
+      severity: warning
+      short: 6h26m
+      slo: prometheus-request-latency

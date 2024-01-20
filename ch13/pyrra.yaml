@@ -1,0 +1,19 @@
+apiVersion: pyrra.dev/v1alpha1
+kind: ServiceLevelObjective
+metadata:
+  name: prometheus-request-latency
+  namespace: prometheus
+spec:
+  target: "99.9"
+  window: 30d
+  description: Percentage of requests Prometheus is fulfilling in <100ms.
+  indicator:
+    latency:
+      success:
+        metric: prometheus_http_request_duration_seconds_bucket{le="0.1"}
+      total:
+        metric: prometheus_http_request_duration_seconds_count
+      grouping:
+        - handler
+  alerting:
+    name: PrometheusHighRequestLatency

@@ -1,0 +1,82 @@
+groups:
+  - name: slo-recording-rules-prometheus
+    rules:
+      - record: slo:sli_success:ratio5m
+        expr: |
+          clamp_min(
+            sum without (pod, instance) (
+              increase(prometheus_http_request_duration_seconds_bucket{le="0.1"}[5m])
+            ),
+            1
+          )
+        / ignoring (le)
+          clamp_min(
+            sum without (pod, instance) (
+              increase(prometheus_http_request_duration_seconds_bucket{le="+Inf"}[5m])
+            ),
+            1
+          )
+        labels:
+          service: prometheus
+          slo: prometheus-request-latency
+          window: 5m
+
+      - record: slo:sli_success:ratio30d
+        expr: |
+          sum_over_time(slo:sli_success:ratio5m{service="prometheus", slo="prometheus-request-latency"}[30d])
+          / ignoring (window)
+          count_over_time(slo:sli_success:ratio5m{service="prometheus", slo="prometheus-request-latency"}[30d])
+        labels:
+          service: prometheus
+          slo: prometheus-request-latency
+          window: 30d
+
+      - record: slo:sli_success:ratio30d
+        expr: |
+          avg_over_time(
+            (
+                (
+                    clamp_min(
+                      sum without (pod, instance) (
+                        increase(prometheus_http_request_duration_seconds_bucket{le="0.1"}[5m])
+                      ),
+                      1
+                    )
+                  / ignoring (le)
+                    clamp_min(
+                      sum without (pod, instance) (
+                        increase(prometheus_http_request_duration_seconds_bucket{le="+Inf"}[5m])
+                      ),
+                      1
+                    )
+                )
+              >= bool 0.999
+            )[30d:5m]
+          )
+        labels:
+          service: prometheus
+          slo: prometheus-request-latency
+          window: 30d
+          sli_window: 5m
+
+  - name: slo-alerting-rules-prometheus
+    rules:
+      - alert: SLOBurnRateHigh
+        expr: |
+          (
+              slo:sli_success:ratio5m{slo="prometheus-request-latency"} > (14.4 * 0.001)
+            and
+              slo:sli_success:ratio1h{slo="prometheus-request-latency"} > (14.4 * 0.001)
+          )
+          or
+          (
+              slo:sli_success:ratio30m{slo="prometheus-request-latency"} > (6 * 0.001)
+            and
+              slo:sli_success:ratio6h{slo="prometheus-request-latency"} > (6 * 0.001)
+          )
+        labels:
+          service: prometheus
+          slo: prometheus-request-latency
+          window: 30d
+          sli_window: 5m
+        

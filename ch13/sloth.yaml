@@ -1,0 +1,34 @@
+version: "prometheus/v1"
+service: "prometheus"
+slos:
+  - name: "prometheus-request-latency"
+    objective: 99.9
+    description: "SLO based on % of HTTP request responded to in <=100ms."
+    sli:
+      events:
+        error_query: |
+            sum without (pod, instance, le) (
+              increase(prometheus_http_request_duration_seconds_bucket{le="+Inf"}[{{.window}}])
+            ) - ignoring (le)
+            sum without (pod, instance, le) (
+              increase(prometheus_http_request_duration_seconds_bucket{le="0.1"}[{{.window}}])
+            )
+        total_query: |
+          clamp_min(
+            sum without (pod, instance, le) (
+                increase(prometheus_http_request_duration_seconds_bucket{le="+Inf"}[{{.window}}])
+              ),
+            1
+          )
+    alerting:
+      name: PrometheusHighRequestLatency
+      labels:
+        category: "latency"
+      annotations:
+        summary: "Prometheus is not serving >=99.9% of requests in <100ms."
+      page_alert:
+        labels:
+          severity: critical
+      ticket_alert:
+        labels:
+          severity: warning
