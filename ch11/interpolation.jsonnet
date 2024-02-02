@@ -22,7 +22,7 @@
                     alert: "SSHDown",
                     expr: |||
                         last_over_time(
-                            probe_success{service="blackbox_ssh",%(matchers)s}[5m]
+                            probe_success{job="blackbox_ssh",%(matchers)s}[5m]
                             ) != 1
                     ||| % _config,
                     "for": "5m",
