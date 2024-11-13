@@ -2,7 +2,7 @@
 
 <a href="https://www.packtpub.com/product/mastering-prometheus/9781805125662"><img src="https://m.media-amazon.com/images/I/71ViQFC0tML._SY425_.jpg" alt="Book Name" height="256px" align="right"></a>
 
-This is the code repository for [Mastering Prometheus](https://www.packtpub.com/product/mastering-prometheus/9781805125662s), published by Packt.
+This is the code repository for [Mastering Prometheus](https://www.packtpub.com/product/mastering-prometheus/9781805125662), published by Packt.
 
 **Gain expert tips to monitoring your infrastructure, applications, and services**
 
