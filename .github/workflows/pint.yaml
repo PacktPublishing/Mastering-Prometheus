@@ -4,7 +4,7 @@ on:
     branches:
       - "main"
     paths:
-      - "ch12/rules/*.yaml"
+      - ".github/pint/test-rule.yaml"
 
 
 jobs:

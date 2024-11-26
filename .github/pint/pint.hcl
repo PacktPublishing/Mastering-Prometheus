@@ -8,7 +8,7 @@ prometheus "mastering-prometheus-public" {
 }
 
 ci {
-  include = [ "ch12/rules/test-rule.yaml" ]
+  include = [ ".github/pint/test-rule.yaml" ]
   baseBranch = "main"
 }
 
